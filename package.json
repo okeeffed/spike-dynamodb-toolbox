@@ -1,0 +1,30 @@
+{
+  "name": "spike-dynamodb-search",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsx main.ts",
+    "dev": "tsx --watch main.ts",
+    "seed": "tsx seed.ts",
+    "bootstrap": "bin/bootstrap.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.515.0",
+    "@aws-sdk/credential-provider-node": "^3.515.0",
+    "@aws-sdk/lib-dynamodb": "^3.515.0",
+    "@faker-js/faker": "^8.4.1",
+    "@tsconfig/node20": "^20.1.2",
+    "@types/node": "^20.11.19",
+    "dynamodb-toolbox": "^0.9.2",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.1"
+  }
+}
