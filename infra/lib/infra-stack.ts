@@ -20,7 +20,7 @@ export class MyDynamoDBStack extends cdk.Stack {
     table.addGlobalSecondaryIndex({
       indexName: "gsi_sorted_roles",
       partitionKey: {
-        name: "sort_key",
+        name: "gsi_pk_1",
         type: dynamodb.AttributeType.STRING,
       },
       // Uncomment the following if you decide to add a sort key for the GSI

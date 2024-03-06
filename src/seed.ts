@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { faker } from "@faker-js/faker";
 import { role, MyTable } from "./db.js";
 import { MerchantPermission, RolePermission } from "./types.js";
@@ -28,7 +29,11 @@ async function seedRoles() {
       })
     );
 
-    await MyTable.batchWrite(items);
+    // Batch write every 25 items
+    if (items.length === 25) {
+      await MyTable.batchWrite(items);
+      items = [];
+    }
   }
 }
 

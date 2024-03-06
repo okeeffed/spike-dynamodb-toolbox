@@ -30,23 +30,6 @@ const client = new DynamoDBClient({
 });
 const ddbDocClient = DynamoDBDocumentClient.from(client, translateConfig);
 
-// Instantiate a table
-export const MyTable = new Table({
-  // Specify table name (used by DynamoDB)
-  name: "spike-dynamodb-toolbox",
-  indexes: {
-    // Indexes are optional, but make accessing the data in a table more flexible
-    GSI1: { partitionKey: "gsi1_pk", sortKey: "updated_at" },
-  },
-
-  // Define partition and sort keys
-  partitionKey: "composite_id",
-  sortKey: "sort_key",
-
-  // Add the DocumentClient
-  DocumentClient: ddbDocClient,
-});
-
 export interface DynamoDBRoleEntity {
   composite_id: string;
   sort_key: string;
@@ -55,16 +38,42 @@ export interface DynamoDBRoleEntity {
   permissions: Permission[]; // This assumes you have defined these types to represent the structure stored in DynamoDB
   description: string;
   gsi_pk_1: string;
-}
-
-export interface DynamoDBRoleEntityWithTs extends DynamoDBRoleEntity {
   created: string;
   modified: string;
 }
 
-interface CustomCompositeKey {
+type TableAttributes = keyof DynamoDBRoleEntity;
+
+type ValidIndexes = Record<
+  string,
+  { partitionKey: TableAttributes; sortKey: TableAttributes }
+>;
+
+// Instantiate a table
+export const MyTable = new Table({
+  // Specify table name (used by DynamoDB)
+  name: "spike-dynamodb-toolbox",
+  indexes: {
+    // Indexes are optional, but make accessing the data in a table more flexible
+    gsi_sorted_roles: { partitionKey: "gsi_pk_1", sortKey: "modified" },
+  } satisfies ValidIndexes,
+
+  // Define partition and sort keys
+  partitionKey: "composite_id" satisfies TableAttributes,
+  sortKey: "sort_key" satisfies TableAttributes,
+
+  // Add the DocumentClient
+  DocumentClient: ddbDocClient,
+});
+
+export interface RolePrimaryKey {
   composite_id: DynamoDBRoleEntity["composite_id"];
   sort_key: DynamoDBRoleEntity["sort_key"];
+}
+
+export interface RoleGsi2PrimaryKey {
+  gsi_pk_1: DynamoDBRoleEntity["gsi_pk_1"];
+  sort_key: DynamoDBRoleEntity["modified"];
 }
 
 // Use to enforce tight coupling between our DynamoDBRoleEntity
@@ -72,14 +81,14 @@ interface CustomCompositeKey {
 // We emit the auto-created created and modified keys from the
 // attributes object.
 type RoleEntityAttributeRecord = Record<
-  keyof DynamoDBRoleEntity,
+  keyof Omit<DynamoDBRoleEntity, "created" | "modified">,
   Entity["attributes"][string]
 >;
 
 export const role = new Entity<
   "Role",
-  DynamoDBRoleEntity,
-  CustomCompositeKey,
+  Omit<DynamoDBRoleEntity, "created" | "modified">,
+  RolePrimaryKey,
   typeof MyTable
 >({
   // Specify entity name
@@ -91,7 +100,7 @@ export const role = new Entity<
     sort_key: { sortKey: true, type: "string" },
     name: { type: "string" },
     lowercaseName: { type: "string" },
-    permissions: { type: "list", setType: "string" }, // Assuming permissions is an array of strings
+    permissions: { type: "list" }, // Assuming permissions is an array of strings
     description: { type: "string" },
     gsi_pk_1: { type: "string" },
   } satisfies RoleEntityAttributeRecord,

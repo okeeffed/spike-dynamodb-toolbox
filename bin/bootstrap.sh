@@ -1,8 +1,11 @@
 #!/bin/bash
 
-AWS_ACCESS_KEY_ID='test'
-AWS_SECRET_KEY='test'
-AWS_REGION='us-east-1'
+# Exit on any error
+set -e
+
+export AWS_ACCESS_KEY_ID='test'
+export AWS_SECRET_KEY='test'
+export AWS_REGION='us-east-1'
 
 # Step 1: Run docker compose up
 echo "Starting LocalStack with Docker Compose..."
