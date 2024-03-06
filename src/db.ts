@@ -1,7 +1,13 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Table, Entity } from "dynamodb-toolbox";
-import { Permission } from "./types.js";
+import { z } from "zod";
+import {
+  MerchantPermission,
+  PartialEntity,
+  Permission,
+  RolePermission,
+} from "./types.js";
 
 const marshallOptions = {
   // Whether to automatically convert empty strings, blobs, and sets to `null`.
@@ -30,7 +36,7 @@ const client = new DynamoDBClient({
 });
 const ddbDocClient = DynamoDBDocumentClient.from(client, translateConfig);
 
-export interface DynamoDBRoleEntity {
+export interface RoleEntity {
   composite_id: string;
   sort_key: string;
   name: string;
@@ -42,8 +48,18 @@ export interface DynamoDBRoleEntity {
   modified: string;
 }
 
-type TableAttributes = keyof DynamoDBRoleEntity;
+type ValidRoleEntity = PartialEntity<
+  RoleEntity,
+  {
+    composite_id: RoleEntity["composite_id"];
+    sort_key: RoleEntity["sort_key"];
+  }
+>;
 
+type ValidDynamoDBSchema<T> = Record<keyof T, z.ZodType<any, any, any>>;
+
+// Here you would add a union type for all the entities in your application
+type TableAttributes = keyof RoleEntity;
 type ValidIndexes = Record<
   string,
   { partitionKey: TableAttributes; sortKey: TableAttributes }
@@ -67,27 +83,27 @@ export const MyTable = new Table({
 });
 
 export interface RolePrimaryKey {
-  composite_id: DynamoDBRoleEntity["composite_id"];
-  sort_key: DynamoDBRoleEntity["sort_key"];
+  composite_id: RoleEntity["composite_id"];
+  sort_key: RoleEntity["sort_key"];
 }
 
 export interface RoleGsi2PrimaryKey {
-  gsi_pk_1: DynamoDBRoleEntity["gsi_pk_1"];
-  sort_key: DynamoDBRoleEntity["modified"];
+  gsi_pk_1: RoleEntity["gsi_pk_1"];
+  sort_key: RoleEntity["modified"];
 }
 
-// Use to enforce tight coupling between our DynamoDBRoleEntity
+// Use to enforce tight coupling between our RoleEntity
 // and the attributes key.
 // We emit the auto-created created and modified keys from the
 // attributes object.
 type RoleEntityAttributeRecord = Record<
-  keyof Omit<DynamoDBRoleEntity, "created" | "modified">,
+  keyof Omit<RoleEntity, "created" | "modified">,
   Entity["attributes"][string]
 >;
 
 export const role = new Entity<
   "Role",
-  Omit<DynamoDBRoleEntity, "created" | "modified">,
+  Omit<RoleEntity, "created" | "modified">,
   RolePrimaryKey,
   typeof MyTable
 >({
@@ -111,3 +127,22 @@ export const role = new Entity<
   // In Typescript, the "as const" statement is needed for type inference
   timestamps: true,
 } as const);
+
+// Add Zod helper for validating the entity. Even though nothing here is
+// optional, this should be as specific as we actually expect. For example,
+// new entities with empty values would break the application if we validate
+// too specifically.
+export const RoleSchema = z.object({
+  composite_id: z.string(),
+  sort_key: z.string(),
+  name: z.string(),
+  lowercaseName: z.string(),
+  permissions: z.array(
+    z.nativeEnum(RolePermission).or(z.nativeEnum(MerchantPermission))
+  ),
+  description: z.string(),
+  gsi_pk_1: z.string(),
+  created: z.string(),
+  modified: z.string(),
+} satisfies ValidDynamoDBSchema<ValidRoleEntity>);
+export type RoleSchema = z.infer<typeof RoleSchema>;

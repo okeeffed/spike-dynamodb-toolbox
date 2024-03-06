@@ -1,4 +1,5 @@
-import { role } from "./db.js";
+import { role, RoleSchema } from "./db.js";
+import { z } from "zod";
 
 async function main() {
   // TODO: Implementation
@@ -7,9 +8,13 @@ async function main() {
     limit: 10,
   });
 
-  console.log("Roles:", roles);
+  const validRoles = await z.array(RoleSchema).safeParseAsync(roles.Items);
 
-  // At this point, you would likely unmarshal/transform the data into the expected format for return
+  console.log("Validated:", validRoles.success);
+  console.log(
+    "Valid roles:",
+    validRoles.success ? validRoles.data : "Invalid roles"
+  );
 }
 
 main().catch(console.error);
