@@ -18,14 +18,14 @@ export class MyDynamoDBStack extends cdk.Stack {
 
     // Adding a Global Secondary Index for searchable first name
     table.addGlobalSecondaryIndex({
-      indexName: "gsi_2",
+      indexName: "gsi_sorted_roles",
       partitionKey: {
-        name: "gsi_pk_2",
+        name: "sort_key",
         type: dynamodb.AttributeType.STRING,
       },
       // Uncomment the following if you decide to add a sort key for the GSI
       sortKey: {
-        name: "gsi_sk_2",
+        name: "_md",
         type: dynamodb.AttributeType.STRING,
       },
     });
